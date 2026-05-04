@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>オカウン PT計算機</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Noto+Sans+JP:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #13131e;
+    --accent: #f0c040;
+    --accent2: #e05c2a;
+    --text: #f0ede8;
+    --muted: #555566;
+    --glow: rgba(240,192,64,0.35);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Noto Sans JP', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    overflow: hidden;
+  }
+
+  /* 背景グリッド */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(240,192,64,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(240,192,64,0.04) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .card {
+    position: relative;
+    z-index: 1;
+    background: var(--surface);
+    border: 1px solid rgba(240,192,64,0.2);
+    border-radius: 4px;
+    padding: 48px 40px 40px;
+    width: 100%;
+    max-width: 420px;
+    box-shadow: 0 0 60px rgba(0,0,0,0.6), 0 0 30px var(--glow);
+  }
+
+  .badge {
+    display: inline-block;
+    background: var(--accent2);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 900;
+    letter-spacing: 0.15em;
+    padding: 3px 10px;
+    border-radius: 2px;
+    margin-bottom: 12px;
+  }
+
+  h1 {
+    font-family: 'Bebas Neue', cursive;
+    font-size: 52px;
+    letter-spacing: 0.06em;
+    line-height: 1;
+    color: var(--accent);
+    text-shadow: 0 0 30px var(--glow);
+    margin-bottom: 4px;
+  }
+
+  .subtitle {
+    font-size: 12px;
+    color: var(--muted);
+    letter-spacing: 0.1em;
+    margin-bottom: 36px;
+  }
+
+  .formula-box {
+    background: rgba(240,192,64,0.06);
+    border: 1px dashed rgba(240,192,64,0.25);
+    border-radius: 4px;
+    padding: 12px 16px;
+    margin-bottom: 32px;
+    font-size: 13px;
+    color: var(--accent);
+    letter-spacing: 0.05em;
+    text-align: center;
+  }
+
+  label {
+    display: block;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    color: var(--muted);
+    margin-bottom: 10px;
+    text-transform: uppercase;
+  }
+
+  .input-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 28px;
+    align-items: stretch;
+  }
+
+  input[type="number"] {
+    flex: 1;
+    background: #0a0a0f;
+    border: 1px solid rgba(240,192,64,0.3);
+    border-radius: 4px;
+    color: var(--text);
+    font-size: 28px;
+    font-family: 'Bebas Neue', cursive;
+    letter-spacing: 0.1em;
+    padding: 14px 18px;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    -moz-appearance: textfield;
+  }
+  input[type="number"]::-webkit-inner-spin-button,
+  input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
+  input[type="number"]:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 14px var(--glow);
+  }
+
+  .btn-calc {
+    background: var(--accent);
+    border: none;
+    border-radius: 4px;
+    color: #0a0a0f;
+    font-family: 'Bebas Neue', cursive;
+    font-size: 18px;
+    letter-spacing: 0.1em;
+    padding: 0 22px;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.1s;
+    white-space: nowrap;
+  }
+  .btn-calc:hover { background: #f5d060; }
+  .btn-calc:active { transform: scale(0.97); }
+
+  .result-area {
+    background: #0a0a0f;
+    border: 1px solid rgba(240,192,64,0.15);
+    border-radius: 4px;
+    padding: 24px 20px;
+    text-align: center;
+    min-height: 110px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: border-color 0.3s;
+  }
+  .result-area.has-result {
+    border-color: rgba(240,192,64,0.4);
+    box-shadow: 0 0 20px rgba(240,192,64,0.1);
+  }
+
+  .result-label {
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    color: var(--muted);
+    text-transform: uppercase;
+  }
+
+  .result-value {
+    font-family: 'Bebas Neue', cursive;
+    font-size: 64px;
+    letter-spacing: 0.05em;
+    color: var(--accent);
+    line-height: 1;
+    text-shadow: 0 0 24px var(--glow);
+    opacity: 0;
+    transform: translateY(8px);
+    transition: opacity 0.35s ease, transform 0.35s ease;
+  }
+  .result-value.show {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .result-formula {
+    font-size: 12px;
+    color: var(--muted);
+    letter-spacing: 0.06em;
+    opacity: 0;
+    transition: opacity 0.35s ease 0.1s;
+  }
+  .result-formula.show { opacity: 1; }
+
+  .placeholder-text {
+    font-size: 13px;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+  }
+
+  .history {
+    margin-top: 28px;
+    border-top: 1px solid rgba(255,255,255,0.05);
+    padding-top: 20px;
+  }
+  .history-label {
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+  .history-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .history-chip {
+    background: rgba(240,192,64,0.07);
+    border: 1px solid rgba(240,192,64,0.15);
+    border-radius: 3px;
+    padding: 4px 10px;
+    font-size: 12px;
+    color: var(--accent);
+    letter-spacing: 0.05em;
+    animation: fadeIn 0.3s ease;
+  }
+  @keyframes fadeIn { from { opacity:0; transform:scale(0.9); } to { opacity:1; transform:scale(1); } }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="badge">UTILITY TOOL</div>
+  <h1>PT CALC</h1>
+  <div class="subtitle">オカウン P/T 計算機</div>
+
+  <div class="formula-box">P/T = 3 × 2 ^ c</div>
+
+  <label>コイン投げに勝った回数 (c)</label>
+  <div class="input-row">
+    <input type="number" id="coinInput" min="0" max="99" placeholder="0" />
+    <button class="btn-calc" onclick="calculate()">計算</button>
+  </div>
+
+  <div class="result-area" id="resultArea">
+    <span class="placeholder-text">回数を入力して計算</span>
+  </div>
+
+  <div class="history" id="historySection" style="display:none">
+    <div class="history-label">履歴</div>
+    <div class="history-list" id="historyList"></div>
+  </div>
+</div>
+
+<script>
+  const history = [];
+
+  document.getElementById('coinInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') calculate();
+  });
+
+  function calculate() {
+    const input = document.getElementById('coinInput');
+    const val = input.value.trim();
+    if (val === '' || isNaN(val) || parseInt(val) < 0) {
+      shake(input);
+      return;
+    }
+    const c = parseInt(val);
+    const result = 3 * Math.pow(2, c);
+
+    const area = document.getElementById('resultArea');
+    area.classList.add('has-result');
+    area.innerHTML = `
+      <span class="result-label">P / T</span>
+      <span class="result-value" id="rv">${result.toLocaleString()}</span>
+      <span class="result-formula" id="rf">3 × 2^${c} = ${result.toLocaleString()}</span>
+    `;
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        document.getElementById('rv').classList.add('show');
+        document.getElementById('rf').classList.add('show');
+      });
+    });
+
+    addHistory(c, result);
+  }
+
+  function addHistory(c, result) {
+    history.unshift({ c, result });
+    if (history.length > 6) history.pop();
+
+    const section = document.getElementById('historySection');
+    section.style.display = 'block';
+    const list = document.getElementById('historyList');
+    list.innerHTML = history.map(h =>
+      `<span class="history-chip">c=${h.c} → ${h.result.toLocaleString()}</span>`
+    ).join('');
+  }
+
+  function shake(el) {
+    el.style.animation = 'none';
+    el.offsetHeight;
+    el.style.animation = 'shake 0.3s ease';
+    setTimeout(() => el.style.animation = '', 300);
+  }
+</script>
+<style>
+@keyframes shake {
+  0%,100%{transform:translateX(0)}
+  20%{transform:translateX(-6px)}
+  40%{transform:translateX(6px)}
+  60%{transform:translateX(-4px)}
+  80%{transform:translateX(4px)}
+}
+</style>
+</body>
+</html>
