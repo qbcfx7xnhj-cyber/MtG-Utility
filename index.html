@@ -356,6 +356,10 @@
         </div>
       </div>
       <div class="log-scroll" id="logScroll"></div>
+      <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 16px; padding: 12px; background: rgba(255,255,255,0.02); border: 1px solid rgba(240,192,64,0.15); border-radius: 4px;">
+        <input type="checkbox" id="clarkCheckbox" style="width: 18px; height: 18px; cursor: pointer; accent-color: var(--accent);">
+        <label for="clarkCheckbox" style="cursor: pointer; font-size: 13px; font-weight: 700; color: var(--text); letter-spacing: 0.05em; margin: 0; flex: 1;">クラークモード</label>
+      </div>
       <div class="speed-row">
         <button class="speed-btn active" onclick="setSpeed('slow',this)">ゆっくり</button>
         <button class="speed-btn" onclick="setSpeed('fast',this)">はやい</button>
@@ -416,6 +420,16 @@
     document.getElementById('resultCard').classList.remove('show');
     document.getElementById('logScroll').innerHTML = '';
 
+    const isClarkMode = document.getElementById('clarkCheckbox').checked;
+
+    if (isClarkMode) {
+      startClarkMode();
+    } else {
+      startNormalMode();
+    }
+  }
+
+  function startNormalMode() {
     const coinInner = document.getElementById('coin');
     const front = document.getElementById('coinFront');
     const back = document.getElementById('coinBack');
@@ -429,8 +443,8 @@
       return;
     }
 
-    const flipDur  = speed === 'slow' ? 480 : 150;
-    const pauseDur = speed === 'slow' ? 380 : 120;
+    const flipDur   = speed === 'slow' ? 480 : 150;
+    const pauseDur  = speed === 'slow' ? 380 : 120;
     let wins = 0;
 
     function throwOne() {
@@ -455,6 +469,73 @@
     throwOne();
   }
 
+  function startClarkMode() {
+    const coinInner = document.getElementById('coin');
+    const front = document.getElementById('coinFront');
+    const back = document.getElementById('coinBack');
+
+    if (speed === 'instant') {
+      let wins = 0;
+      while (true) {
+        const coin1 = Math.random() < 0.5;
+        const coin2 = Math.random() < 0.5;
+        if (coin1 && coin2) {
+          wins++;
+        } else if (!coin1 && !coin2) {
+          break;
+        } else {
+          wins++;
+        }
+      }
+      showSimResult(wins);
+      return;
+    }
+
+    const flipDur  = speed === 'slow' ? 480 : 150;
+    const pauseDur = speed === 'slow' ? 380 : 120;
+    let wins = 0;
+
+    function throwPair() {
+      front.classList.remove('lit');
+      back.classList.remove('lit');
+      coinInner.classList.add('flipping');
+      
+      setTimeout(() => {
+        coinInner.classList.remove('flipping');
+        
+        const coin1 = Math.random() < 0.5;
+        const coin2 = Math.random() < 0.5;
+        
+        let result1 = coin1 ? '表' : '裏';
+        let result2 = coin2 ? '表' : '裏';
+        
+        addChip(result1, coin1 ? 'h' : 't');
+        addChipWithBreak(result2, coin2 ? 'h' : 't');
+        
+        if (coin1 && coin2) {
+          // 2枚とも表
+          front.classList.add('lit');
+          wins++;
+          setTimeout(throwPair, pauseDur);
+        } else if ((!coin1 && !coin2)) {
+          // 2枚とも裏
+          back.classList.add('lit');
+          setTimeout(() => showSimResult(wins), pauseDur);
+        } else {
+          // 1枚表、1枚裏
+          if (coin1) {
+            front.classList.add('lit');
+          } else {
+            back.classList.add('lit');
+          }
+          wins++;
+          setTimeout(throwPair, pauseDur);
+        }
+      }, flipDur);
+    }
+    throwPair();
+  }
+
   function addChip(text, cls) {
     const scroll = document.getElementById('logScroll');
     const chip = document.createElement('span');
@@ -464,10 +545,23 @@
     scroll.scrollTop = scroll.scrollHeight;
   }
 
+  function addChipWithBreak(text, cls) {
+    const scroll = document.getElementById('logScroll');
+    const chip = document.createElement('span');
+    chip.className = `log-chip ${cls}`;
+    chip.textContent = text;
+    scroll.appendChild(chip);
+    
+    const br = document.createElement('br');
+    scroll.appendChild(br);
+    
+    scroll.scrollTop = scroll.scrollHeight;
+  }
+
   function showSimResult(wins) {
     const pt = 3 * Math.pow(2, wins);
     document.getElementById('rWins').textContent = wins;
-    document.getElementById('rPt').textContent = pt.toLocaleString();
+    document.getElementById('rPt').textContent = `${pt.toLocaleString()} / ${pt.toLocaleString()}`;
     document.getElementById('rFormula').textContent = `3 × 2^${wins} = ${pt.toLocaleString()}`;
     document.getElementById('resultCard').classList.add('show');
     addHistory(wins, pt, 'sim');
@@ -489,7 +583,7 @@
     }
     const c = parseInt(val);
     const pt = 3 * Math.pow(2, c);
-    document.getElementById('mrPt').textContent = pt.toLocaleString();
+    document.getElementById('mrPt').textContent = `${pt.toLocaleString()} / ${pt.toLocaleString()}`;
     document.getElementById('mrFormula').textContent = `3 × 2^${c} = ${pt.toLocaleString()}`;
     document.getElementById('manualResult').classList.add('show');
     addHistory(c, pt, 'manual');
